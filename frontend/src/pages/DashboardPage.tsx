@@ -14,7 +14,7 @@ import api from '../api/client';
 import SectionCard from '../components/SectionCard';
 import StatCard from '../components/StatCard';
 import { useAuth } from '../context/AuthContext';
-import type { DashboardData, ReportOverview, Sale } from '../types';
+import type { Customer, DashboardData, ReportOverview, Sale } from '../types';
 import { formatCurrency, formatDate, formatNumber } from '../utils/format';
 
 interface SalesTrendPoint {
@@ -28,6 +28,10 @@ const DashboardPage: React.FC = () => {
   const [overview, setOverview] = useState<ReportOverview | null>(null);
   const [salesTrend, setSalesTrend] = useState<SalesTrendPoint[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showPendingModal, setShowPendingModal] = useState(false);
+  const [pendingCustomers, setPendingCustomers] = useState<Customer[]>([]);
+  const [loadingPending, setLoadingPending] = useState(false);
+  const [pendingError, setPendingError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -66,6 +70,24 @@ const DashboardPage: React.FC = () => {
     }));
   }, [overview]);
 
+  const handlePendingPaymentsClick = async () => {
+    setShowPendingModal(true);
+    setLoadingPending(true);
+    setPendingCustomers([]);
+    setPendingError(null);
+    try {
+      const { data } = await api.get<Customer[]>('/api/customers/pending-payments');
+      console.log('Pending payments data:', data);
+      setPendingCustomers(data || []);
+    } catch (error: any) {
+      console.error('Error fetching pending payments:', error);
+      setPendingError(error?.response?.data?.message || 'Failed to load pending payments');
+      setPendingCustomers([]);
+    } finally {
+      setLoadingPending(false);
+    }
+  };
+
   if (loading || !dashboard || !overview) {
     return <div className="page-loader">Preparing control room…</div>;
   }
@@ -101,6 +123,14 @@ const DashboardPage: React.FC = () => {
           value={dashboard.stats.saleCount}
           meta="Total bills"
           accent="orange"
+        />
+        <StatCard
+          title="Pending Payments"
+          value={formatCurrency(dashboard.stats.pendingPaymentsTotal || 0)}
+          meta={`${dashboard.stats.pendingPaymentsCount || 0} customers`}
+          accent="red"
+          onClick={handlePendingPaymentsClick}
+          clickable
         />
       </div>
 
@@ -201,6 +231,61 @@ const DashboardPage: React.FC = () => {
           )}
         </SectionCard>
       </div>
+
+      {/* Pending Payments Modal */}
+      {showPendingModal && (
+        <div className="modal-overlay" onClick={() => setShowPendingModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Pending Payments</h2>
+              <button 
+                className="modal-close" 
+                onClick={() => setShowPendingModal(false)}
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              {loadingPending ? (
+                <div className="page-loader">Loading pending payments...</div>
+              ) : pendingError ? (
+                <p className="empty-state form-error">{pendingError}</p>
+              ) : pendingCustomers.length === 0 ? (
+                <p className="empty-state">No pending payments found. All invoices are paid.</p>
+              ) : (
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Customer Name</th>
+                      <th>Phone</th>
+                      <th>Email</th>
+                      <th>Pending Amount</th>
+                      <th>Invoices</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pendingCustomers.map((customer: any) => (
+                      <tr key={customer._id}>
+                        <td>{customer.name}</td>
+                        <td>{customer.phone || '-'}</td>
+                        <td>{customer.email || '-'}</td>
+                        <td className="danger-text">{formatCurrency(customer.totalPending || 0)}</td>
+                        <td>{customer.invoiceCount || 0}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button className="btn-primary" onClick={() => setShowPendingModal(false)}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -100,6 +100,8 @@ export interface DashboardData {
     saleCount: number;
     customerCount: number;
     supplierCount: number;
+    pendingPaymentsTotal?: number;
+    pendingPaymentsCount?: number;
   };
   lowStock: Product[];
 }

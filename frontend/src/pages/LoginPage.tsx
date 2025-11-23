@@ -30,7 +30,7 @@ const LoginPage: React.FC = () => {
     <div className="auth-page">
       <form className="auth-card" onSubmit={handleSubmit}>
         <div className="brand text-center">
-          <img src="/datc-banner.jpg" alt="DATC AgroShop" className="brand-logo large" />
+          <img src="/datc-logo.jpg" alt="DATC AgroShop" className="brand-logo large" />
           <p className="brand-title">DATC AgroShop Admin</p>
           <p className="brand-subtitle">Deepak Agriculture &amp; Trading Company</p>
         </div>

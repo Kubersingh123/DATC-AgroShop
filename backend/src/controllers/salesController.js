@@ -45,7 +45,11 @@ const createSale = asyncHandler(async (req, res) => {
   });
 
   if (customerId) {
-    await Customer.findByIdAndUpdate(customerId, { $inc: { outstandingBalance: total } });
+    // Only add to outstanding balance if payment is pending or partial
+    if (paymentStatus === 'pending' || paymentStatus === 'partial') {
+      await Customer.findByIdAndUpdate(customerId, { $inc: { outstandingBalance: total } });
+    }
+    // If paid, don't add to outstanding balance
   }
 
   // reduce stock
