@@ -786,7 +786,7 @@ textarea {
 
 .bill-actions {
   display: flex;
-  gap: 12px;
+    gap: 12px;
   justify-content: flex-end;
   padding: 16px;
   background: #fff;
@@ -843,7 +843,7 @@ textarea {
   display: flex;
   justify-content: center;
   gap: 24px;
-  flex-wrap: wrap;
+    flex-wrap: wrap;
 }
 
 .bill-contact-item div {
@@ -1091,8 +1091,8 @@ textarea {
   padding: 16px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
-}
+    gap: 8px;
+  }
 
 .mobile-nav-link {
   padding: 14px 16px;

@@ -14,7 +14,7 @@ import api from '../api/client';
 import SectionCard from '../components/SectionCard';
 import StatCard from '../components/StatCard';
 import { useAuth } from '../context/AuthContext';
-import type { Customer, DashboardData, ReportOverview, Sale } from '../types';
+import type { Customer, DashboardData, Product, ReportOverview, Sale, Supplier } from '../types';
 import { formatCurrency, formatDate, formatNumber } from '../utils/format';
 
 interface SalesTrendPoint {
@@ -32,6 +32,22 @@ const DashboardPage: React.FC = () => {
   const [pendingCustomers, setPendingCustomers] = useState<Customer[]>([]);
   const [loadingPending, setLoadingPending] = useState(false);
   const [pendingError, setPendingError] = useState<string | null>(null);
+  
+  const [showProductsModal, setShowProductsModal] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(false);
+  
+  const [showCustomersModal, setShowCustomersModal] = useState(false);
+  const [customers, setCustomers] = useState<Customer[]>([]);
+  const [loadingCustomers, setLoadingCustomers] = useState(false);
+  
+  const [showSuppliersModal, setShowSuppliersModal] = useState(false);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [loadingSuppliers, setLoadingSuppliers] = useState(false);
+  
+  const [showSalesModal, setShowSalesModal] = useState(false);
+  const [sales, setSales] = useState<Sale[]>([]);
+  const [loadingSales, setLoadingSales] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -77,7 +93,6 @@ const DashboardPage: React.FC = () => {
     setPendingError(null);
     try {
       const { data } = await api.get<Customer[]>('/api/customers/pending-payments');
-      console.log('Pending payments data:', data);
       setPendingCustomers(data || []);
     } catch (error: any) {
       console.error('Error fetching pending payments:', error);
@@ -85,6 +100,58 @@ const DashboardPage: React.FC = () => {
       setPendingCustomers([]);
     } finally {
       setLoadingPending(false);
+    }
+  };
+
+  const handleProductsClick = async () => {
+    setShowProductsModal(true);
+    setLoadingProducts(true);
+    try {
+      const { data } = await api.get<Product[]>('/api/products');
+      setProducts(data || []);
+    } catch (error: any) {
+      console.error('Error fetching products:', error);
+    } finally {
+      setLoadingProducts(false);
+    }
+  };
+
+  const handleCustomersClick = async () => {
+    setShowCustomersModal(true);
+    setLoadingCustomers(true);
+    try {
+      const { data } = await api.get<Customer[]>('/api/customers');
+      setCustomers(data || []);
+    } catch (error: any) {
+      console.error('Error fetching customers:', error);
+    } finally {
+      setLoadingCustomers(false);
+    }
+  };
+
+  const handleSuppliersClick = async () => {
+    setShowSuppliersModal(true);
+    setLoadingSuppliers(true);
+    try {
+      const { data } = await api.get<Supplier[]>('/api/suppliers');
+      setSuppliers(data || []);
+    } catch (error: any) {
+      console.error('Error fetching suppliers:', error);
+    } finally {
+      setLoadingSuppliers(false);
+    }
+  };
+
+  const handleSalesClick = async () => {
+    setShowSalesModal(true);
+    setLoadingSales(true);
+    try {
+      const { data } = await api.get<Sale[]>('/api/sales');
+      setSales(data || []);
+    } catch (error: any) {
+      console.error('Error fetching sales:', error);
+    } finally {
+      setLoadingSales(false);
     }
   };
 
@@ -110,19 +177,35 @@ const DashboardPage: React.FC = () => {
       </section>
 
       <div className="stat-grid">
-        <StatCard title="Products live" value={dashboard.stats.productCount} meta="SKUs" />
-        <StatCard title="Customers" value={dashboard.stats.customerCount} accent="yellow" />
+        <StatCard 
+          title="Products live" 
+          value={dashboard.stats.productCount} 
+          meta="SKUs"
+          onClick={handleProductsClick}
+          clickable
+        />
+        <StatCard 
+          title="Customers" 
+          value={dashboard.stats.customerCount} 
+          accent="yellow"
+          onClick={handleCustomersClick}
+          clickable
+        />
         <StatCard
           title="Suppliers"
           value={dashboard.stats.supplierCount}
           meta="Active partners"
           accent="blue"
+          onClick={handleSuppliersClick}
+          clickable
         />
         <StatCard
           title="Invoices generated"
           value={dashboard.stats.saleCount}
           meta="Total bills"
           accent="orange"
+          onClick={handleSalesClick}
+          clickable
         />
         <StatCard
           title="Pending Payments"
@@ -280,6 +363,230 @@ const DashboardPage: React.FC = () => {
             </div>
             <div className="modal-footer">
               <button className="btn-primary" onClick={() => setShowPendingModal(false)}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Products Modal */}
+      {showProductsModal && (
+        <div className="modal-overlay" onClick={() => setShowProductsModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>All Products ({products.length})</h2>
+              <button 
+                className="modal-close" 
+                onClick={() => setShowProductsModal(false)}
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              {loadingProducts ? (
+                <div className="page-loader">Loading products...</div>
+              ) : products.length === 0 ? (
+                <p className="empty-state">No products found.</p>
+              ) : (
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Product Name</th>
+                      <th>SKU</th>
+                      <th>Category</th>
+                      <th>Stock</th>
+                      <th>Sale Price</th>
+                      <th>GST %</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {products.map((product) => (
+                      <tr key={product._id}>
+                        <td>{product.name}</td>
+                        <td>{product.sku}</td>
+                        <td>{product.category || '-'}</td>
+                        <td>{product.stock} {product.unit || 'kg'}</td>
+                        <td>{formatCurrency(product.salePrice || 0)}</td>
+                        <td>{product.gstRate ?? 0}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button className="btn-primary" onClick={() => setShowProductsModal(false)}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Customers Modal */}
+      {showCustomersModal && (
+        <div className="modal-overlay" onClick={() => setShowCustomersModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>All Customers ({customers.length})</h2>
+              <button 
+                className="modal-close" 
+                onClick={() => setShowCustomersModal(false)}
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              {loadingCustomers ? (
+                <div className="page-loader">Loading customers...</div>
+              ) : customers.length === 0 ? (
+                <p className="empty-state">No customers found.</p>
+              ) : (
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Phone</th>
+                      <th>Email</th>
+                      <th>Address</th>
+                      <th>Outstanding Balance</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {customers.map((customer) => (
+                      <tr key={customer._id}>
+                        <td>{customer.name}</td>
+                        <td>{customer.phone || '-'}</td>
+                        <td>{customer.email || '-'}</td>
+                        <td>{customer.address || '-'}</td>
+                        <td className={customer.outstandingBalance && customer.outstandingBalance > 0 ? 'danger-text' : ''}>
+                          {formatCurrency(customer.outstandingBalance || 0)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button className="btn-primary" onClick={() => setShowCustomersModal(false)}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Suppliers Modal */}
+      {showSuppliersModal && (
+        <div className="modal-overlay" onClick={() => setShowSuppliersModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>All Suppliers ({suppliers.length})</h2>
+              <button 
+                className="modal-close" 
+                onClick={() => setShowSuppliersModal(false)}
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              {loadingSuppliers ? (
+                <div className="page-loader">Loading suppliers...</div>
+              ) : suppliers.length === 0 ? (
+                <p className="empty-state">No suppliers found.</p>
+              ) : (
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Contact Person</th>
+                      <th>Phone</th>
+                      <th>Email</th>
+                      <th>Account Balance</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {suppliers.map((supplier) => (
+                      <tr key={supplier._id}>
+                        <td>{supplier.name}</td>
+                        <td>{supplier.contactPerson || '-'}</td>
+                        <td>{supplier.phone || '-'}</td>
+                        <td>{supplier.email || '-'}</td>
+                        <td>{formatCurrency(supplier.accountBalance || 0)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button className="btn-primary" onClick={() => setShowSuppliersModal(false)}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sales/Invoices Modal */}
+      {showSalesModal && (
+        <div className="modal-overlay" onClick={() => setShowSalesModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>All Invoices ({sales.length})</h2>
+              <button 
+                className="modal-close" 
+                onClick={() => setShowSalesModal(false)}
+                aria-label="Close"
+              >
+                ×
+              </button>
+            </div>
+            <div className="modal-body">
+              {loadingSales ? (
+                <div className="page-loader">Loading invoices...</div>
+              ) : sales.length === 0 ? (
+                <p className="empty-state">No invoices found.</p>
+              ) : (
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Invoice Number</th>
+                      <th>Customer</th>
+                      <th>Items</th>
+                      <th>Subtotal</th>
+                      <th>GST</th>
+                      <th>Total</th>
+                      <th>Status</th>
+                      <th>Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sales.map((sale) => (
+                      <tr key={sale._id}>
+                        <td>{sale.invoiceNumber}</td>
+                        <td>{sale.customer?.name || 'Walk-in'}</td>
+                        <td>{sale.items.length}</td>
+                        <td>{formatCurrency(sale.subtotal)}</td>
+                        <td>{formatCurrency(sale.gstTotal)}</td>
+                        <td>{formatCurrency(sale.total)}</td>
+                        <td>
+                          <span className={`status-pill ${sale.paymentStatus}`}>{sale.paymentStatus}</span>
+                        </td>
+                        <td>{formatDate(sale.saleDate)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+            <div className="modal-footer">
+              <button className="btn-primary" onClick={() => setShowSalesModal(false)}>
                 Close
               </button>
             </div>
